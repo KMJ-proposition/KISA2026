@@ -21,5 +21,6 @@ K군 본인의 서버가 기본 환경에서 운영됨을 알고, 보다 안전�
     - [KISA(Korea Internet & Security Agency)](https://www.kisa.or.kr/)
 * 자료
     - [주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드](https://www.kisa.or.kr/2060204)
-* 조력
-    - [Google Gemini](https://gemini.google.com/app) (정보 탐색 및 검토 등)
+* 조력 (정보 탐색 및 검토 등)
+    - [Google Gemini](https://gemini.google.com/app)
+    - [Microsoft Copilot](https://www.microsoft.com/ko-kr/microsoft-365-copilot)
