@@ -1,8 +1,6 @@
 #!/bin/bash
 # KISA2026 high threat script by K
 # target OS: LINUX - RedHat
-# tools: Microsoft Copilot, Google Gemini
-#		details: vim editing, locate vs find, helper (_) 관례, case 제안, 로직 제안 등과 intuition 정리
 
 # 관리자 권한 검사
 if [[ "$EUID" != 0 ]]; then echo ">>> [오류] 관리자 권한으로 실행해주세요."; exit 0; fi
@@ -96,45 +94,33 @@ _inspector() {
 
 	_search find_file "$basedir" "$basefile"					# 1차 탐색
 	if [[ $? -eq 0 ]]; then
-# 	if [[ $? -ne 0 ]]; then			# test case
+# 	if [[ $? -ne 0 ]]; then		# test case
 		_info exist "$object_code"					# 보고
-# 		echo "test 0"				# test case
+# 		echo "test 0"			# test case
 	else
 		_info warn "$object_code"					# 보고
 		if rpm -qi mlocate &> /dev/null; then
 			_search "$basedir" "$basefile" locator				# 2차 탐색
-# 			echo "test 1"			# test case
+# 			echo "test 1"		# test case
 		fi
 		if [[ $? -eq 0 ]]; then
-# 		if [[ $? -ne 0 ]]; then		# test case
+# 		if [[ $? -ne 0 ]]; then	# test case
 			_search find_dir "$basedir" "$content"				# 2차 탐색
-# 			echo "test 2"			# test case
+# 			echo "test 2"		# test case
 		fi
 	fi
 
 	if _grep match "$content" "$file"; then						# 내용 탐색
 		_info content_y "$object_code $file"		# 보고
 		_info result_good $object_code				# 보고
-#		echo "test 3"				# test case
+#		echo "test 3"			# test case
 	else
 		_info content_n "$object_code $file"		# 보고
 		_info result_bad $object_code				# 보고
-#		echo "test 4"				# test case
+#		echo "test 4"			# test case
 	fi
 }
 
-_liner() {
-	local object_code="$1"
-    shift			# shell만 가진 것
-
-    while [[ $# -gt 0 ]]; do		# 반복 구조 처리
-		_inspector "$object_code" "$1" "$2" "$3"
-		shift 3
-	done
-}
-
 # U-01
-#_inspector "U-01" "/etc/pam.d" "login" "auth required /lib/security/pam_securetty.so"
-_liner "U-01" \
-"/etc/pam.d" "login" "auth required /lib/security/pam_securetty.so" \
-"/etc/ssh" "sshd_config" "PermitRootLogin no"
+_inspector "U-01" "/etc/pam.d" "login" "auth required /lib/security/pam_securetty.so"
+_inspector "U-01" "/etc/ssh" "sshd_config" "PermitRootLogin no"
