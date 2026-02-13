@@ -1,0 +1,140 @@
+#!/bin/bash
+# KISA2026 high threat script by K
+# target OS: LINUX - RedHat
+# tools: Microsoft Copilot, Google Gemini
+#		details: vim editing, locate vs find, helper (_) 관례, case 제안, 로직 제안 등과 intuition 정리
+
+# 관리자 권한 검사
+if [[ "$EUID" != 0 ]]; then echo ">>> [오류] 관리자 권한으로 실행해주세요."; exit 0; fi
+
+# 검사 구분 문장
+_info() {
+	case "$1" in
+		content_y)
+			echo ">>> $2 설정 내용이 존재합니다."
+			;;
+		content_n)
+			echo ">>> $2 설정 내용이 존재하지 않습니다."
+			;;
+		notice)
+			echo "*** $2 [상] 평가를 실시합니다."
+			;;
+		exist)
+			echo ">>> $2 설정 또는 파일이 존재합니다."
+			;;
+		result_bad)
+			printf ">>> [판정] %s 기준 부적합\n\n" "$2"
+			;;
+		result_good)
+			printf ">>> [판정] %s 기준 적합\n\n" "$2"
+			;;
+		warn)
+			echo ">>> [경고] $2 설정 내용 또는 파일이 기본 경로에 존재하지 않습니다. 정밀 탐색을 실시합니다."
+			;;
+		*)
+			;;
+	esac
+}
+
+_search() {
+# 변경된 경로 탐색용
+	case "$1" in
+		locator)
+			# 1차 탐색 - 디렉터리/파일
+			update_db &> /dev/null
+			locate "$2/$3" &> /dev/null
+			;;
+		find_file)
+			# 1차 탐색 - 파일
+			find "$2" -type f -name "$3" &> /dev/null
+			;;
+		find_dir)
+			# 2차 탐색 - 디렉터리
+			find '/' -type d -name "$2" -exec grep -Rix "$3" {} \; &> /dev/null
+			;;
+		*)
+			;;
+	esac
+}
+
+_grep() {
+	case "$1" in
+		match)
+			grep -ix "$2" "$3" &> /dev/null
+			;;
+		replace)
+			grep -R "$2" "$3" &> /dev/null
+			;;
+		regex)
+			grep -E "$2" "$3" &> /dev/null
+			;;
+		*)
+			grep "$1" "$2" &> /dev/null
+			;;	
+	esac
+}
+
+# ㄱ. 기본 탐색
+# 1. 기본 경로 탐색
+# 2. 설정 여부
+# ㄴ. 변경 탐색
+# 3. 변경된 경로 탐색
+# 4. 변경된 경로의 설정 여부
+# ㄷ. 보고
+# 1. 시작 보고
+# 2. 중간 보고
+# 3. 결과 보고
+
+_inspector() {
+	local object_code="$1"
+	local basedir="$2"
+	local basefile="$3"
+	local content="$4"
+	local file="$basedir/$basefile"
+
+	_info notice "$object_code"						# 보고
+
+	_search find_file "$basedir" "$basefile"					# 1차 탐색
+	if [[ $? -eq 0 ]]; then
+# 	if [[ $? -ne 0 ]]; then			# test case
+		_info exist "$object_code"					# 보고
+# 		echo "test 0"				# test case
+	else
+		_info warn "$object_code"					# 보고
+		if rpm -qi mlocate &> /dev/null; then
+			_search "$basedir" "$basefile" locator				# 2차 탐색
+# 			echo "test 1"			# test case
+		fi
+		if [[ $? -eq 0 ]]; then
+# 		if [[ $? -ne 0 ]]; then		# test case
+			_search find_dir "$basedir" "$content"				# 2차 탐색
+# 			echo "test 2"			# test case
+		fi
+	fi
+
+	if _grep match "$content" "$file"; then						# 내용 탐색
+		_info content_y "$object_code $file"		# 보고
+		_info result_good $object_code				# 보고
+#		echo "test 3"				# test case
+	else
+		_info content_n "$object_code $file"		# 보고
+		_info result_bad $object_code				# 보고
+#		echo "test 4"				# test case
+	fi
+}
+
+_liner() {
+	local object_code="$1"
+    shift			# shell만 가진 것
+
+    while [[ $# -gt 0 ]]; do		# 반복 구조 처리
+		_inspector "$object_code" "$1" "$2" "$3"
+		shift 3
+	done
+}
+
+# U-01
+#_inspector "U-01" "/etc/pam.d" "login" "auth required /lib/security/pam_securetty.so"
+_liner "U-01" \
+"/etc/pam.d" "login" "auth required /lib/security/pam_securetty.so" \
+"/etc/ssh" "sshd_config" "PermitRootLogin no"
